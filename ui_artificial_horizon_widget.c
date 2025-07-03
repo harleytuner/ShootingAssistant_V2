@@ -87,19 +87,19 @@ static void draw_fixed_reticle(lv_obj_t *parent_obj_for_reticle, int parent_w, i
     int32_t calculated_center_x = parent_w / 2;
     int32_t calculated_center_y = parent_h / 2;
 
-    lv_obj_t *reticle_v_line_top = lv_line_create(parent_obj_for_reticle);
-    lv_point_t v_points_top[] = {{calculated_center_x, calculated_center_y - 10}, {calculated_center_x, calculated_center_y - 2}}; 
-    lv_line_set_points(reticle_v_line_top, v_points_top, 2);
-    lv_obj_set_style_line_color(reticle_v_line_top, RETICLE_COLOR, 0); 
-    lv_obj_set_style_line_width(reticle_v_line_top, 2, 0);
-    lv_obj_set_style_line_opa(reticle_v_line_top, LV_OPA_COVER, 0);
+    //lv_obj_t *reticle_v_line_top = lv_line_create(parent_obj_for_reticle);
+    //lv_point_t v_points_top[] = {{calculated_center_x, calculated_center_y - 10}, {calculated_center_x, calculated_center_y - 2}}; 
+    //lv_line_set_points(reticle_v_line_top, v_points_top, 2);
+    //lv_obj_set_style_line_color(reticle_v_line_top, RETICLE_COLOR, 0); 
+    //lv_obj_set_style_line_width(reticle_v_line_top, 2, 0);
+    //lv_obj_set_style_line_opa(reticle_v_line_top, LV_OPA_COVER, 0);
 
-    lv_obj_t *reticle_v_line_bottom = lv_line_create(parent_obj_for_reticle);
-    lv_point_t v_points_bottom[] = {{calculated_center_x, calculated_center_y + 2}, {calculated_center_x, calculated_center_y + 10}}; 
-    lv_line_set_points(reticle_v_line_bottom, v_points_bottom, 2);
-    lv_obj_set_style_line_color(reticle_v_line_bottom, RETICLE_COLOR, 0); 
-    lv_obj_set_style_line_width(reticle_v_line_bottom, 2, 0);
-    lv_obj_set_style_line_opa(reticle_v_line_bottom, LV_OPA_COVER, 0);
+    //lv_obj_t *reticle_v_line_bottom = lv_line_create(parent_obj_for_reticle);
+    //lv_point_t v_points_bottom[] = {{calculated_center_x, calculated_center_y + 2}, {calculated_center_x, calculated_center_y + 10}}; 
+    //lv_line_set_points(reticle_v_line_bottom, v_points_bottom, 2);
+    //lv_obj_set_style_line_color(reticle_v_line_bottom, RETICLE_COLOR, 0); 
+    //lv_obj_set_style_line_width(reticle_v_line_bottom, 2, 0);
+    //lv_obj_set_style_line_opa(reticle_v_line_bottom, LV_OPA_COVER, 0);
 
     fixed_reticle_drawn = true; // Set flag after attempting to draw
 }

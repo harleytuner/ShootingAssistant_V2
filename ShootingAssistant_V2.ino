@@ -16,7 +16,7 @@
 
 // --- Calibration Offsets ---
 float g_roll_calibration_offset = -5.0f;  // <<<< SET YOUR OBSERVED ROLL OFFSET HERE
-float g_pitch_calibration_offset = 0.0f; // <<<< SET YOUR OBSERVED PITCH OFFSET HERE (barrel level)
+float g_pitch_calibration_offset = 3.0f; // <<<< SET YOUR OBSERVED PITCH OFFSET HERE (barrel level)
 
 // --- Recoil Detection Parameters ---
 // IMPORTANT: RECOIL_Z_AXIS_THRESHOLD_NEGATIVE assumes Z-axis points FORWARD along the barrel.

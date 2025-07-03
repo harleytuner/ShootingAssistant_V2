@@ -3,16 +3,25 @@
 // LVGL version: 8.3.11
 // Project name: SquareLine_Project
 
-#include "ui.h" // This should include lvgl.h and also transitively
-                // ui_Shot_Counter_Page.h and ui_Stage_Timer_Page.h
-                // If not, add explicit includes:
-#include "ui_Shot_Counter_Page.h" // For shot counter functions
-#include "ui_Stage_Timer_Page.h"  // For timer status functions
-#include <stdio.h>                // For printf
+#include "ui.h"
+#include "ui_Shot_Counter_Page.h" 
+#include "ui_Stage_Timer_Page.h"
+#include <stdio.h>
+#include <math.h>
+
+// --- Bubble Level Definitions ---
+#define LEVEL_CANVAS_WIDTH 200
+#define LEVEL_CANVAS_HEIGHT 40
+#define TUBE_WIDTH (LEVEL_CANVAS_WIDTH - 10)
+#define TUBE_HEIGHT (LEVEL_CANVAS_HEIGHT - 10)
+#define TUBE_BORDER_RADIUS 8
+#define BUBBLE_HEIGHT (TUBE_HEIGHT - 2)
+#define BUBBLE_WIDTH (BUBBLE_HEIGHT + 12)
+#define MAX_ROLL_ANGLE 30.0f
 
 // --- Global UI object pointers for Competition Page ---
 lv_obj_t * ui_Competition_Page;
-lv_obj_t * ui_CompPageLabel; // Original Title
+lv_obj_t * ui_CompPageLabel; 
 
 // Original Navigation buttons
 lv_obj_t * ui_Page5HomeBTN;
@@ -32,8 +41,22 @@ lv_obj_t * ui_CompPageStartButtonLabel;
 lv_obj_t * ui_CompPageResetButton;
 lv_obj_t * ui_CompPageResetButtonLabel;
 
+// Bubble Level UI Elements
+static lv_obj_t *ui_BubbleLevelCanvas = NULL;
+static lv_obj_t *ui_RollAngleLabel = NULL;
+static lv_timer_t *ui_level_update_timer = NULL;
+
 // LVGL Timer for live data updates on this page
 static lv_timer_t * competition_page_data_refresh_timer = NULL;
+
+// --- Colors for the Bubble Level ---
+static lv_color_t color_page_bg_bubble;
+static lv_color_t color_tube_bg_bubble;
+static lv_color_t color_bubble_green;
+static lv_color_t color_bubble_yellow;
+static lv_color_t color_bubble_red;
+static lv_color_t color_text_roll_label;
+static lv_color_t color_tube_marking_bubble;
 
 // Define a default background color (e.g. black for a dark theme, or use theme default)
 static lv_color_t default_competition_page_bgcolor; 
@@ -41,6 +64,9 @@ static lv_color_t default_competition_page_bgcolor;
 // --- Forward declarations for static functions ---
 static void competition_page_refresh_timer_cb(lv_timer_t * timer);
 static void competition_page_visibility_event_cb(lv_event_t * e); // For managing timer
+static void draw_bubble_level_on_canvas(float roll_angle_deg);
+static void level_update_timer_cb(lv_timer_t *timer);
+
 
 // --- Public function to update displayed data (callable) ---
 void ui_Competition_Page_update_live_data_display(void) {
@@ -60,9 +86,7 @@ void ui_Competition_Page_update_live_data_display(void) {
     // Update Shots Display
     if (ui_CompPageShotsValueLabel) {
         int shots = ui_shot_counter_get_shots_remaining();
-        // Debug printf to see what value is being fetched for shots
-        // printf("ui_Competition_Page_update_live_data_display: Fetched shots: %d\n", shots);
-        char buf[4]; // Max "99\0" or "-9\0" for typical shot counts
+        char buf[4];
         lv_snprintf(buf, sizeof(buf), "%d", shots);
         lv_label_set_text(ui_CompPageShotsValueLabel, buf);
     }
@@ -72,29 +96,25 @@ void ui_Competition_Page_update_live_data_display(void) {
         if (ui_stage_timer_is_timer_running()) {
             lv_label_set_text(ui_CompPageStartButtonLabel, "Pause");
         } else {
-            // If time has run down but not to zero from a paused state
             if (time_sec > 0 && time_sec < ui_stage_timer_get_current_set_time_seconds()) {
                 lv_label_set_text(ui_CompPageStartButtonLabel, "Resume");
-            } else { // Timer is at 0, or at set time and not started
+            } else { 
                 lv_label_set_text(ui_CompPageStartButtonLabel, "Start");
             }
         }
     }
 
     // Update background color based on time remaining
-    if (ui_Competition_Page) { // Ensure the page object exists
+    if (ui_Competition_Page) { 
         if (time_sec > 0 && time_sec <= 30) {
             lv_obj_set_style_bg_color(ui_Competition_Page, lv_color_hex(0xFF0000), LV_PART_MAIN | LV_STATE_DEFAULT);
         } else {
-            // Only change back to default if it's not already the default
-            // This check helps avoid unnecessary redraws if default_competition_page_bgcolor hasn't been set yet
-            // or if the color is already default.
-            if (lv_obj_is_valid(ui_Competition_Page) && default_competition_page_bgcolor.full != 0 ) { // Check if default was captured
+            if (lv_obj_is_valid(ui_Competition_Page) && default_competition_page_bgcolor.full != 0 ) {
                  if (lv_obj_get_style_bg_color(ui_Competition_Page, LV_PART_MAIN).full != default_competition_page_bgcolor.full) {
                     lv_obj_set_style_bg_color(ui_Competition_Page, default_competition_page_bgcolor, LV_PART_MAIN | LV_STATE_DEFAULT);
                  }
-            } else if (lv_obj_is_valid(ui_Competition_Page)) { // Fallback if default not captured (e.g. first run before load event)
-                 lv_obj_set_style_bg_color(ui_Competition_Page, lv_color_black(), LV_PART_MAIN | LV_STATE_DEFAULT); // Default to black
+            } else if (lv_obj_is_valid(ui_Competition_Page)) {
+                 lv_obj_set_style_bg_color(ui_Competition_Page, lv_color_black(), LV_PART_MAIN | LV_STATE_DEFAULT);
             }
         }
     }
@@ -138,27 +158,96 @@ void ui_event_CompPageStartButton(lv_event_t * e) {
     }
 }
 
-// In ui_Competition_Page.c
-
-// ... (other functions and includes) ...
-
 void ui_event_CompPageResetButton(lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);
     if(event_code == LV_EVENT_PRESSED   ) {
-        printf("ui_Competition_Page: Reset button pressed.\n");
-        ui_stage_timer_reset_timer_to_set_time_action(); // Resets time correctly.
-
-        // --- CORRECTED SHOT COUNTER RESET ---
-        ui_shot_counter_reset_to_set_count(); // Use the correct reset function
-        // --- END OF CORRECTION ---
-
-        printf("ui_Competition_Page: After reset - Shots remaining (getter): %d, Current set (getter): %d\n",
-               ui_shot_counter_get_shots_remaining(), ui_shot_counter_get_current_set_shot_count());
+        ui_stage_timer_reset_timer_to_set_time_action();
+        ui_shot_counter_reset_to_set_count();
         ui_Competition_Page_update_live_data_display();
     }
 }
 
-// ... (rest of ui_Competition_Page.c) ...
+// --- Bubble Level Helper Functions (Copied from ui_Bubble_Level_Page.c) ---
+
+static void draw_bubble_level_on_canvas(float roll_angle_deg) {
+    if (!ui_BubbleLevelCanvas || !lv_obj_is_valid(ui_BubbleLevelCanvas)) {
+        return;
+    }
+
+    float display_angle = roll_angle_deg;
+    if (display_angle > MAX_ROLL_ANGLE) display_angle = MAX_ROLL_ANGLE;
+    if (display_angle < -MAX_ROLL_ANGLE) display_angle = -MAX_ROLL_ANGLE;
+
+    lv_canvas_fill_bg(ui_BubbleLevelCanvas, color_page_bg_bubble, LV_OPA_COVER);
+
+    lv_draw_rect_dsc_t tube_dsc;
+    lv_draw_rect_dsc_init(&tube_dsc);
+    tube_dsc.bg_color = color_tube_bg_bubble;
+    tube_dsc.radius = TUBE_BORDER_RADIUS;
+    int32_t tube_draw_x = (LEVEL_CANVAS_WIDTH - TUBE_WIDTH) / 2;
+    int32_t tube_draw_y = (LEVEL_CANVAS_HEIGHT - TUBE_HEIGHT) / 2;
+    lv_canvas_draw_rect(ui_BubbleLevelCanvas, tube_draw_x, tube_draw_y, TUBE_WIDTH, TUBE_HEIGHT, &tube_dsc);
+
+    lv_draw_rect_dsc_t mark_rect_dsc;
+    lv_draw_rect_dsc_init(&mark_rect_dsc);
+    mark_rect_dsc.bg_color = color_tube_marking_bubble;
+    lv_canvas_draw_rect(ui_BubbleLevelCanvas,
+                        tube_draw_x + TUBE_WIDTH / 2 - 1,
+                        tube_draw_y + 2,
+                        2,
+                        TUBE_HEIGHT - 4,
+                        &mark_rect_dsc);
+
+    int32_t bubble_travel_range_px = TUBE_WIDTH - BUBBLE_WIDTH;
+    if (bubble_travel_range_px < 0) bubble_travel_range_px = 0; 
+
+    float normalized_pos = (display_angle + MAX_ROLL_ANGLE) / (2.0f * MAX_ROLL_ANGLE);
+    int32_t bubble_offset_in_tube = (int32_t)(normalized_pos * bubble_travel_range_px);
+
+    int32_t bubble_draw_x = tube_draw_x + bubble_offset_in_tube;
+    int32_t bubble_draw_y = tube_draw_y + (TUBE_HEIGHT - BUBBLE_HEIGHT) / 2;
+
+    lv_color_t current_bubble_color;
+    float abs_actual_angle = fabsf(roll_angle_deg);
+
+    if (abs_actual_angle <= 3.0f) {
+        current_bubble_color = color_bubble_green;
+    } else if (abs_actual_angle <= 8.0f) {
+        current_bubble_color = color_bubble_yellow;
+    } else {
+        current_bubble_color = color_bubble_red;
+    }
+
+    lv_draw_rect_dsc_t bubble_dsc;
+    lv_draw_rect_dsc_init(&bubble_dsc);
+    bubble_dsc.bg_color = current_bubble_color;
+    bubble_dsc.radius = BUBBLE_HEIGHT / 2;
+    lv_canvas_draw_rect(ui_BubbleLevelCanvas,
+                        bubble_draw_x,
+                        bubble_draw_y,
+                        BUBBLE_WIDTH,
+                        BUBBLE_HEIGHT,
+                        &bubble_dsc);
+}
+
+static void level_update_timer_cb(lv_timer_t *timer) {
+    (void)timer;
+
+    if (!ui_Competition_Page || !lv_obj_is_valid(ui_Competition_Page) ||
+        !ui_RollAngleLabel || !lv_obj_is_valid(ui_RollAngleLabel) ||
+        !ui_BubbleLevelCanvas || !lv_obj_is_valid(ui_BubbleLevelCanvas)) {
+        return;
+    }
+
+    float current_roll = get_qmi8658_roll_degrees();
+
+    char angle_text_buf[16];
+    snprintf(angle_text_buf, sizeof(angle_text_buf), "%.0f°", current_roll);
+    lv_label_set_text(ui_RollAngleLabel, angle_text_buf);
+
+    draw_bubble_level_on_canvas(current_roll);
+}
+
 
 // --- LVGL Timer Callback for Competition Page live updates ---
 static void competition_page_refresh_timer_cb(lv_timer_t * timer) {
@@ -173,29 +262,30 @@ static void competition_page_visibility_event_cb(lv_event_t * e) {
 
     if (screen == ui_Competition_Page) { 
         if (code == LV_EVENT_SCREEN_LOADED) {
-            printf("ui_Competition_Page: SCREEN_LOADED event.\n"); 
             if (competition_page_data_refresh_timer) {
                 lv_timer_resume(competition_page_data_refresh_timer);
             } else {
                 competition_page_data_refresh_timer = lv_timer_create(competition_page_refresh_timer_cb, 330, NULL); 
             }
-            if(ui_Competition_Page) { // Capture default bg color after page object is surely created
+             if (ui_level_update_timer) {
+                lv_timer_resume(ui_level_update_timer);
+            } else {
+                ui_level_update_timer = lv_timer_create(level_update_timer_cb, 250, NULL);
+            }
+            if(ui_Competition_Page) { 
                 default_competition_page_bgcolor = lv_obj_get_style_bg_color(ui_Competition_Page, LV_PART_MAIN);
-                printf("ui_Competition_Page: Default BG color captured: #%06X (R:%d G:%d B:%d)\n",
-                   default_competition_page_bgcolor.full,
-                   default_competition_page_bgcolor.ch.red,
-                   default_competition_page_bgcolor.ch.green,
-                   default_competition_page_bgcolor.ch.blue);
             }
             ui_Competition_Page_update_live_data_display(); 
         } else if (code == LV_EVENT_SCREEN_UNLOADED) {
-            printf("ui_Competition_Page: SCREEN_UNLOADED event.\n"); 
             if (competition_page_data_refresh_timer) {
                 lv_timer_pause(competition_page_data_refresh_timer);
             }
-            if(ui_Competition_Page && default_competition_page_bgcolor.full != 0) { // Check if default was captured
+            if (ui_level_update_timer) {
+                lv_timer_pause(ui_level_update_timer);
+            }
+            if(ui_Competition_Page && default_competition_page_bgcolor.full != 0) {
                 lv_obj_set_style_bg_color(ui_Competition_Page, default_competition_page_bgcolor, LV_PART_MAIN | LV_STATE_DEFAULT);
-            } else if (ui_Competition_Page) { // Fallback
+            } else if (ui_Competition_Page) {
                  lv_obj_set_style_bg_color(ui_Competition_Page, lv_color_black(), LV_PART_MAIN | LV_STATE_DEFAULT);
             }
         }
@@ -204,19 +294,11 @@ static void competition_page_visibility_event_cb(lv_event_t * e) {
 
 // --- New function to handle recoil event, called externally ---
 void ui_competition_page_handle_recoil_event(void) {
-    printf("ui_competition_page_handle_recoil_event: Called.\n");
-
     bool timer_is_active = ui_stage_timer_is_timer_running();
-    printf("ui_competition_page_handle_recoil_event: Timer running status: %s\n", timer_is_active ? "true" : "false");
 
     if (timer_is_active) {
-        printf("ui_competition_page_handle_recoil_event: Timer is active. Current shots before decrement: %d\n", ui_shot_counter_get_shots_remaining());
         ui_shot_counter_decrement_shot();          
-        printf("ui_competition_page_handle_recoil_event: After decrement. New shots: %d\n", ui_shot_counter_get_shots_remaining());
         ui_Competition_Page_update_live_data_display(); 
-        printf("ui_competition_page_handle_recoil_event: Display updated.\n");
-    } else {
-        printf("ui_competition_page_handle_recoil_event: Timer not running, shot not decremented.\n");
     }
 }
 
@@ -225,10 +307,7 @@ void ui_competition_page_handle_recoil_event(void) {
 void ui_Competition_Page_screen_init(void) {
     ui_Competition_Page = lv_obj_create(NULL);
     lv_obj_clear_flag(ui_Competition_Page, LV_OBJ_FLAG_SCROLLABLE);
-    // Initialize default_competition_page_bgcolor.full to 0 or some indicator it's not set.
-    // It will be properly captured in LV_EVENT_SCREEN_LOADED.
-    // Setting a default here could be overwritten by the theme if not careful.
-    default_competition_page_bgcolor.full = 0; // Indicate not yet captured
+    default_competition_page_bgcolor.full = 0;
 
 
     ui_CompPageLabel = lv_label_create(ui_Competition_Page);
@@ -242,26 +321,49 @@ void ui_Competition_Page_screen_init(void) {
     ui_CompPageTimeStaticLabel = lv_label_create(ui_Competition_Page);
     lv_label_set_text(ui_CompPageTimeStaticLabel, "Time:");
     lv_obj_set_x(ui_CompPageTimeStaticLabel, -80);
-    lv_obj_set_y(ui_CompPageTimeStaticLabel, -75);
+    lv_obj_set_y(ui_CompPageTimeStaticLabel, -90);
     lv_obj_set_align(ui_CompPageTimeStaticLabel, LV_ALIGN_CENTER);
 
     ui_CompPageTimeValueLabel = lv_label_create(ui_Competition_Page);
     lv_obj_set_width(ui_CompPageTimeValueLabel, 120);
     lv_obj_align_to(ui_CompPageTimeValueLabel, ui_CompPageTimeStaticLabel, LV_ALIGN_OUT_RIGHT_MID, 15, -5);
-    lv_obj_set_style_text_font(ui_CompPageTimeValueLabel, &lv_font_montserrat_36, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_CompPageTimeValueLabel, &lv_font_montserrat_34, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_label_set_text(ui_CompPageTimeValueLabel, "00:00");
 
     ui_CompPageShotsStaticLabel = lv_label_create(ui_Competition_Page);
     lv_label_set_text(ui_CompPageShotsStaticLabel, "Shots:");
     lv_obj_set_x(ui_CompPageShotsStaticLabel, -80);
-    lv_obj_set_y(ui_CompPageShotsStaticLabel, -25);
+    lv_obj_set_y(ui_CompPageShotsStaticLabel, -50);
     lv_obj_set_align(ui_CompPageShotsStaticLabel, LV_ALIGN_CENTER);
 
     ui_CompPageShotsValueLabel = lv_label_create(ui_Competition_Page);
     lv_obj_set_width(ui_CompPageShotsValueLabel, 80);
-    lv_obj_align_to(ui_CompPageShotsValueLabel, ui_CompPageShotsStaticLabel, LV_ALIGN_OUT_RIGHT_MID, 15, -5);
-    lv_obj_set_style_text_font(ui_CompPageShotsValueLabel, &lv_font_montserrat_36, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_align_to(ui_CompPageShotsValueLabel, ui_CompPageShotsStaticLabel, LV_ALIGN_OUT_RIGHT_MID, 50, -5);
+    lv_obj_set_style_text_font(ui_CompPageShotsValueLabel, &lv_font_montserrat_34, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_label_set_text(ui_CompPageShotsValueLabel, "0");
+
+    // --- Bubble Level Specific UI Initialization ---
+    color_page_bg_bubble = lv_obj_get_style_bg_color(ui_Competition_Page, LV_PART_MAIN);
+    color_tube_bg_bubble = lv_color_hex(0xFFFFFF);
+    color_bubble_green = lv_color_hex(0x4CAF50);
+    color_bubble_yellow = lv_color_hex(0xFFEB3B);
+    color_bubble_red = lv_color_hex(0xF44336);
+    color_text_roll_label = lv_color_hex(0xFFFFFF);
+    color_tube_marking_bubble = lv_color_hex(0x000000);
+
+    ui_RollAngleLabel = lv_label_create(ui_Competition_Page);
+    lv_label_set_text(ui_RollAngleLabel, "0°");
+    lv_obj_set_style_text_color(ui_RollAngleLabel, color_text_roll_label, LV_PART_MAIN);
+    lv_obj_set_style_text_font(ui_RollAngleLabel, &lv_font_montserrat_20, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_align(ui_RollAngleLabel, LV_ALIGN_CENTER, 0, 40);
+
+
+    ui_BubbleLevelCanvas = lv_canvas_create(ui_Competition_Page);
+    static lv_color_t canvas_buffer[LV_CANVAS_BUF_SIZE_TRUE_COLOR(LEVEL_CANVAS_WIDTH, LEVEL_CANVAS_HEIGHT)];
+    lv_canvas_set_buffer(ui_BubbleLevelCanvas, canvas_buffer, LEVEL_CANVAS_WIDTH, LEVEL_CANVAS_HEIGHT, LV_IMG_CF_TRUE_COLOR);
+    lv_obj_align(ui_BubbleLevelCanvas, LV_ALIGN_CENTER, 0, 10);
+    draw_bubble_level_on_canvas(0.0f);
+
 
     ui_CompPageStartButton = lv_btn_create(ui_Competition_Page);
     lv_obj_set_width(ui_CompPageStartButton, 90);
@@ -343,6 +445,11 @@ void ui_Competition_Page_screen_destroy(void) {
         lv_timer_del(competition_page_data_refresh_timer);
         competition_page_data_refresh_timer = NULL;
     }
+    
+    if (ui_level_update_timer) {
+        lv_timer_del(ui_level_update_timer);
+        ui_level_update_timer = NULL;
+    }
 
     if (ui_Competition_Page) {
         lv_obj_remove_event_cb_with_user_data(ui_Competition_Page, competition_page_visibility_event_cb, NULL);
@@ -366,4 +473,7 @@ void ui_Competition_Page_screen_destroy(void) {
     ui_CompPageStartButtonLabel = NULL;
     ui_CompPageResetButton = NULL;
     ui_CompPageResetButtonLabel = NULL;
+    
+    ui_BubbleLevelCanvas = NULL;
+    ui_RollAngleLabel = NULL;
 }

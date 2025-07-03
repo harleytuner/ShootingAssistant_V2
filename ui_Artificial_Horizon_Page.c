@@ -99,7 +99,7 @@ void ui_Artificial_Horizon_Page_screen_init(void)
         lv_timer_del(ahrs_update_timer);
         ahrs_update_timer = NULL;
     }
-    ahrs_update_timer = lv_timer_create(update_artificial_horizon_widget_timer_cb, 50, NULL); // 50ms period, no user_data directly (uses static)
+    ahrs_update_timer = lv_timer_create(update_artificial_horizon_widget_timer_cb, 250, NULL); // 50ms period, no user_data directly (uses static)
     // If you want to pass ahrs_data via user_data:
     // ahrs_update_timer = lv_timer_create(update_artificial_horizon_widget_timer_cb, 50, &ahrs_data);
 

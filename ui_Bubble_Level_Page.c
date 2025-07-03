@@ -178,7 +178,7 @@ void ui_Bubble_Level_Page_screen_init(void)
 
     // 3. Create an LVGL timer to update the level periodically
     if (ui_level_update_timer == NULL) {
-        ui_level_update_timer = lv_timer_create(level_update_timer_cb, 100, NULL);
+        ui_level_update_timer = lv_timer_create(level_update_timer_cb, 250, NULL);
     } else {
         lv_timer_reset(ui_level_update_timer);
         lv_timer_resume(ui_level_update_timer);

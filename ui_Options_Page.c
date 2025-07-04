@@ -83,7 +83,7 @@ void ui_Options_Page_screen_init(void)
     lv_obj_set_width(ui_OptionsPageLabel, LV_SIZE_CONTENT);  
     lv_obj_set_height(ui_OptionsPageLabel, LV_SIZE_CONTENT);   
     lv_obj_set_x(ui_OptionsPageLabel, 0);
-    lv_obj_set_y(ui_OptionsPageLabel, 10);
+    lv_obj_set_y(ui_OptionsPageLabel, 25);
     lv_obj_set_align(ui_OptionsPageLabel, LV_ALIGN_TOP_MID);
     lv_label_set_text(ui_OptionsPageLabel, "OPTIONS MENU");
 

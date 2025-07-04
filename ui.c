@@ -5,6 +5,7 @@
 
 #include "ui.h"
 #include "ui_helpers.h"
+#include "ui_battery_indicator.h"
 
 ///////////////////// VARIABLES ////////////////////
 
@@ -43,6 +44,9 @@ void ui_init(void)
     ui_Competition_Page_screen_init();
     ui____initial_actions0 = lv_obj_create(NULL);
     lv_disp_load_scr(ui_Options_Page);
+
+    // Create the battery indicator on the top layer AFTER all screens are initialized
+    ui_battery_indicator_create(lv_layer_top());
 }
 
 void ui_destroy(void)

@@ -163,7 +163,7 @@ void ui_Shot_Counter_Page_screen_init(void)
     lv_obj_set_width(ui_Label6, LV_SIZE_CONTENT);
     lv_obj_set_height(ui_Label6, LV_SIZE_CONTENT);
     lv_obj_set_x(ui_Label6, 0);
-    lv_obj_set_y(ui_Label6, -140); 
+    lv_obj_set_y(ui_Label6, -125); 
     lv_obj_set_align(ui_Label6, LV_ALIGN_CENTER);
     lv_label_set_text(ui_Label6, "Shot Counter");
 

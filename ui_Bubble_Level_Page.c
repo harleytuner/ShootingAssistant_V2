@@ -93,7 +93,7 @@ void ui_Bubble_Level_Page_screen_init(void)
     lv_obj_set_width(ui_BubbleLevelPageLabel, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_BubbleLevelPageLabel, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_BubbleLevelPageLabel, 0);
-    lv_obj_set_y(ui_BubbleLevelPageLabel, -140); // Adjusted Y from your file
+    lv_obj_set_y(ui_BubbleLevelPageLabel, -125); // Adjusted Y from your file
     lv_obj_set_align(ui_BubbleLevelPageLabel, LV_ALIGN_CENTER);
     lv_label_set_text(ui_BubbleLevelPageLabel, "Bubble Level");
 

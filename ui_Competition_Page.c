@@ -314,7 +314,7 @@ void ui_Competition_Page_screen_init(void) {
     lv_obj_set_width(ui_CompPageLabel, LV_SIZE_CONTENT);
     lv_obj_set_height(ui_CompPageLabel, LV_SIZE_CONTENT);
     lv_obj_set_x(ui_CompPageLabel, 0);
-    lv_obj_set_y(ui_CompPageLabel, -140);
+    lv_obj_set_y(ui_CompPageLabel, -125);
     lv_obj_set_align(ui_CompPageLabel, LV_ALIGN_CENTER);
     lv_label_set_text(ui_CompPageLabel, "Competition Live");
 

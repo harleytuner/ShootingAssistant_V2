@@ -263,7 +263,7 @@ void ui_Stage_Timer_Page_screen_init(void)
     lv_obj_set_width(ui_StageTimerPageTitleLabel, LV_SIZE_CONTENT);
     lv_obj_set_height(ui_StageTimerPageTitleLabel, LV_SIZE_CONTENT);
     lv_obj_set_x(ui_StageTimerPageTitleLabel, 0);
-    lv_obj_set_y(ui_StageTimerPageTitleLabel, -140);
+    lv_obj_set_y(ui_StageTimerPageTitleLabel, -125);
     lv_obj_set_align(ui_StageTimerPageTitleLabel, LV_ALIGN_CENTER);
     lv_label_set_text(ui_StageTimerPageTitleLabel, "Stage Timer");
 

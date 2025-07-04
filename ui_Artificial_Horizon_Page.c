@@ -60,7 +60,7 @@ void ui_Artificial_Horizon_Page_screen_init(void)
     lv_obj_set_width(ui_ArtificialHorizonPageLabel, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_ArtificialHorizonPageLabel, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_ArtificialHorizonPageLabel, 0);
-    lv_obj_set_y(ui_ArtificialHorizonPageLabel, -140); // Adjust Y position as needed
+    lv_obj_set_y(ui_ArtificialHorizonPageLabel, -125); // Adjust Y position as needed
     lv_obj_set_align(ui_ArtificialHorizonPageLabel, LV_ALIGN_CENTER);
     lv_label_set_text(ui_ArtificialHorizonPageLabel, "Artificial Horizon");
     // Add any styling for the label if needed (font, color, etc.)

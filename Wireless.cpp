@@ -1,10 +1,35 @@
 #include "Wireless.h"
 
-
 bool WIFI_Connection = 0;
 uint8_t WIFI_NUM = 0;
 uint8_t BLE_NUM = 0;
 bool Scan_finish = 0;
+static bool wifi_state_on = false; // Keep track of Wi-Fi state
+
+// --- Correct location for these functions ---
+void stop_wifi(void) {
+    if (wifi_state_on) {
+        WiFi.disconnect(true);
+        WiFi.mode(WIFI_OFF);
+        wifi_state_on = false;
+    }
+}
+
+void start_wifi(void) {
+    if (!wifi_state_on) {
+        WiFi.mode(WIFI_STA);
+        // NOTE: You might need to add your specific WiFi.begin(ssid, pass) here
+        // if your project requires connecting to a specific network.
+        WiFi.begin(); 
+        wifi_state_on = true;
+    }
+}
+
+bool is_wifi_on(void) {
+    return wifi_state_on;
+}
+// -----------------------------------------
+
 int wifi_scan_number()
 {
   printf("/**********WiFi Test**********/\r\n");
@@ -27,6 +52,10 @@ int wifi_scan_number()
   WiFi.mode(WIFI_OFF);  
   vTaskDelay(100);        
   printf("/*******WiFi Test Over********/\r\n\r\n");
+  
+  // Set wifi_state_on to true after scanning, assuming Wi-Fi is left on
+  wifi_state_on = true; 
+
   return count;
 }
 int ble_scan_number()

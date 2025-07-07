@@ -1,17 +1,16 @@
 #include "ui_battery_indicator.h"
-#include "BAT_Driver.h" // For BAT_Get_Volts()
+#include "BAT_Driver.h" // Needed for the BAT_analogVolts variable
 #include <stdio.h>
 
 static lv_obj_t *battery_container;
 static lv_obj_t *battery_icon_label;
 static lv_obj_t *battery_text_label;
+// static lv_obj_t *voltage_text_label; // --- (1) REMOVE THIS LINE ---
 
-// --- New Function: More accurate percentage calculation for LiPo ---
+// --- get_lipo_percentage function remains the same ---
 static int get_lipo_percentage(float voltage) {
     int percentage = 0;
-    // This is a more realistic mapping based on a typical LiPo discharge curve.
-    // Values are approximate and can be fine-tuned.
-    if (voltage >= 4.20) {
+    if (voltage >= 4.15) {
         percentage = 100;
     } else if (voltage >= 4.10) {
         percentage = 90 + (int)((voltage - 4.10) / 0.10 * 10);
@@ -32,18 +31,16 @@ static int get_lipo_percentage(float voltage) {
     } else {
         percentage = 0;
     }
-
     if (percentage > 100) percentage = 100;
     if (percentage < 0) percentage = 0;
-    
     return percentage;
 }
-// -----------------------------------------------------------------
 
 
 void ui_battery_indicator_create(lv_obj_t *parent) {
     battery_container = lv_obj_create(parent);
-    lv_obj_set_size(battery_container, 80, 25);
+    // --- (2) Change width back to 80 ---
+    lv_obj_set_size(battery_container, 80, 25); 
     lv_obj_align(battery_container, LV_ALIGN_TOP_RIGHT, -5, 5);
     lv_obj_set_style_bg_opa(battery_container, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(battery_container, 0, 0);
@@ -58,18 +55,27 @@ void ui_battery_indicator_create(lv_obj_t *parent) {
     battery_text_label = lv_label_create(battery_container);
     lv_label_set_text(battery_text_label, "100%");
     lv_obj_align_to(battery_text_label, battery_icon_label, LV_ALIGN_OUT_LEFT_MID, -5, 0);
+    
+    // --- (3) REMOVE THE VOLTAGE LABEL CREATION ---
+    // voltage_text_label = lv_label_create(battery_container);
+    // lv_label_set_text(voltage_text_label, "0.00V");
+    // lv_obj_align_to(voltage_text_label, battery_text_label, LV_ALIGN_OUT_LEFT_MID, -5, 0);
 }
 
 void ui_battery_indicator_update(void) {
-    float voltage = BAT_Get_Volts();
-    // --- Use the new function for percentage calculation ---
+    float voltage = BAT_analogVolts;
     int percentage = get_lipo_percentage(voltage);
-    // -----------------------------------------------------
 
-    char buf[8];
-    sprintf(buf, "%d%%", percentage);
-    lv_label_set_text(battery_text_label, buf);
+    char percent_buf[8];
+    sprintf(percent_buf, "%d%%", percentage);
+    lv_label_set_text(battery_text_label, percent_buf);
 
+    // --- (4) REMOVE THE VOLTAGE LABEL UPDATE ---
+    // char voltage_buf[8];
+    // sprintf(voltage_buf, "%.2fV", voltage);
+    // lv_label_set_text(voltage_text_label, voltage_buf);
+    
+    // Update the battery icon based on percentage
     if (percentage > 80) {
         lv_label_set_text(battery_icon_label, LV_SYMBOL_BATTERY_FULL);
     } else if (percentage > 50) {

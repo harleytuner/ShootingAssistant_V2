@@ -89,7 +89,10 @@ void Lvgl_Init(void) {
   esp_timer_handle_t lvgl_tick_timer = NULL;
   esp_timer_create(&lvgl_tick_timer_args, &lvgl_tick_timer);
   esp_timer_start_periodic(lvgl_tick_timer, EXAMPLE_LVGL_TICK_PERIOD_MS * 1000);
+   lv_timer_create(battery_update_timer_cb, 1000, NULL);
 }
+
+
 void Lvgl_Loop(void) {
   lv_timer_handler(); /* let the GUI do its work */
 }
